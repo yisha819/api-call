@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artwork Showcase</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav>
+        <li><a href="#Home">Home</a></li>
+        <li><a href="#About">About</a></li>
+        <li><a href="#gallery">Gallery</a></li>
+    </nav>
+
+    <div id="Home">
+        <img src="PICS/COVER.png" alt="Cover picture of Studio Haven">
+        <div class="title">
+            <h1>STUDIO HAVEN</h1>
+        </div>
+        <div class="button_abt">
+            <a href="#About" class="about-button">About Us</a>
+        </div>
+    </div>
+
+    <div id="About">
+        <h1>ABOUT <i>Studio Haven</i></h1>
+        <h2><i>Welcome to Studio Haven where art finds its sanctuary.</i><br>
+            Immerse yourself in a curated collection of inspiring works from artists around the world, each piece telling a unique story. At Studio Haven, we celebrate creativity and craftsmanship, providing a space for art lovers and creators to connect, explore, and be inspired. Discover your next favorite piece, explore our artists’ journeys, and step into a world where every canvas invites a new perspective. </h2>
+    </div>
+
+
+    <div id="title_gallery">
+        <h1>GALLERY</h1>
+    </div>
+
+    <div id="gallery">
+        <div class="artworks">
+            <div id="artwork-container"></div>
+            <div id="pagination">
+                <button id="prev-btn" disabled>&larr; NEXT</button>
+                <button id="next-btn" disabled>PREVIOUS &rarr;</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

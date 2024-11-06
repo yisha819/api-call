@@ -13,7 +13,7 @@ nav {
     font-weight: 500;
     list-style: none;
     display: flex;
-    flex-direction: row;
+    flex-wrap: wrap; 
     justify-content: center;
     padding: 30px;
     margin-top: 0;
@@ -22,11 +22,10 @@ nav {
     position: fixed;
     width: 100%;
     z-index: 1000;
-
 }
 
 nav li {
-    margin: 0 20px; 
+    margin: 0 20px;
 }
 
 nav li a {
@@ -49,17 +48,17 @@ body {
     padding: 0;
 }
 
+
 /* HOME SECTION */ 
 #Home {
+    display: flex;
+    flex-direction: column;
     width: 100%;
-    overflow: hidden;
-    position: relative;
+    height: 100vh;
     text-align: center;
-}
-
-.Home-img {
-    width: 100%;
-    height: auto; 
+    background-image: url(PICS/COVER.png);
+    background-size: cover;
+    background-position: center;
 }
 
 .title {
@@ -78,8 +77,7 @@ body {
 }
 
 .button_abt {
-    position: relative;
-    top: -230px;
+    margin-top: 450px;
 }
 
 
@@ -175,9 +173,13 @@ body {
 }
 
 #artwork-container {
-    width: 100%;
-    height: auto;
+    width: 70%;
+    height: 90%;
     
+}
+
+#loading-message {
+    font-family: 'Montserrat', sans-serif;
 }
 
 

@@ -77,7 +77,7 @@ body {
 }
 
 .button_abt {
-    margin-top: 450px;
+    margin-top: 530px;
 }
 
 
@@ -95,7 +95,7 @@ body {
 }
 
 .about-button:hover {
-    background-color: #b8987a;
+    background-color: #d4bba4;
 }
 
 /* ABOUT SECTION */
@@ -173,7 +173,7 @@ body {
 }
 
 #artwork-container {
-    width: 70%;
+    width: 60%;
     height: 90%;
     
 }

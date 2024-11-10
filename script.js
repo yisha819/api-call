@@ -1,124 +1,121 @@
 let currentIndex = 0;
+let artworksMetadata = []; 
 let preloadedArtworks = [];
 
-// Function to preload artworks
-async function preloadArtworks() {
-  // Show loading message while fetching data
+// Function to preload only metadata
+async function preloadArtworksMetadata() {
   const loadingMessage = document.getElementById('loading-message');
-  if (loadingMessage) {
-    loadingMessage.style.display = 'block';  // Show loading message
-  }
+  if (loadingMessage) loadingMessage.style.display = 'block';
 
   const url = 'https://api.artic.edu/api/v1/artworks?page=1&limit=100';
 
   try {
-    // Fetch the list of artworks from the API
     const response = await fetch(url);
-    const data = await response.json();  // Parse the response into JSON
-    const artworks = data.data;
 
-    // Filter artworks to include only those with valid image URLs
-    const filteredArtworks = artworks.filter(artwork => {
-      return artwork.image_id || (artwork.thumbnail && artwork.thumbnail.lpiq);
-    });
-
-    // Create an array of image fetch promises for each artwork, preload images concurrently
-    const imagePromises = filteredArtworks.map((artwork, index) => loadArtwork(artwork, index));
-
-    // Wait for all image fetches to complete concurrently (Promise.all for faster loading)
-    const results = await Promise.all(imagePromises);
-
-    // Filter out null results (failed image fetches)
-    preloadedArtworks = results.filter(artwork => artwork !== null);
-
-    // Display the first artwork if available
-    if (preloadedArtworks.length > 0) {
-      displayArtwork(preloadedArtworks[currentIndex]);
+    // Check if response is successful
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    updatePaginationButtons(); // Update pagination buttons after loading
+    const data = await response.json();
 
-    // Hide loading message once data is loaded
-    if (loadingMessage) {
-      loadingMessage.style.display = 'none';
+    // Check if data has the expected structure
+    if (!data || !data.data) {
+      throw new Error('Invalid data format received from the API');
     }
+
+    artworksMetadata = data.data.filter(artwork => artwork.image_id || (artwork.thumbnail && artwork.thumbnail.lpiq));
+
+    if (artworksMetadata.length > 0) {
+      loadArtworkImage(currentIndex);
+    }
+
+    updatePaginationButtons();
+    if (loadingMessage) loadingMessage.style.display = 'none';
   } catch (error) {
-    // Handle any errors during the fetch operation
     console.error('Error fetching data:', error);
-    if (loadingMessage) {
-      loadingMessage.style.display = 'none'; // Hide loading message on error
+    if (loadingMessage) loadingMessage.style.display = 'none';
+
+    // Error message
+    const errorMessage = document.getElementById('error-message');
+    if (errorMessage) {
+      errorMessage.textContent = 'Sorry, there was an error loading the artworks. Please try again later.';
+      errorMessage.style.display = 'block';
     }
   }
 }
 
-// Function to load a single artwork
-async function loadArtwork(artwork, index) {
+// Function to load a single artwork image with lazy loading
+async function loadArtworkImage(index) {
+  const artwork = artworksMetadata[index];
+  if (!artwork) return;
+
   const title = artwork.title || "Unknown Title";
   const artist = artwork.artist_title || "Unknown Artist";
   const altText = artwork.thumbnail ? artwork.thumbnail.alt_text : "No description available";
-  
-  // Determine the image URL based on the available data (image_id or thumbnail)
-  const imageUrl = artwork.image_id
+
+  const thumbnailUrl = artwork.thumbnail ? artwork.thumbnail.lpiq : null;
+  const fullImageUrl = artwork.image_id
     ? `https://www.artic.edu/iiif/2/${artwork.image_id}/full/2000,/0/default.jpg`
-    : artwork.thumbnail && artwork.thumbnail.lpiq;
+    : thumbnailUrl;
 
   try {
-    // Fetch the image for the artwork (in parallel with other image requests)
-    const response = await fetch(imageUrl);
-    
-    // If the image is successfully fetched, return its data
-    if (response.ok) {
-      return { title, artist, altText, imageUrl };
-    } else {
-      // Log error if the image fetch fails (invalid URL or image not found)
-      console.log(`Image not found for artwork: ${title} (Status code: ${response.status})`);
-      return null; // Indicate that the artwork image is not valid
+    const artworkData = { title, artist, altText, fullImageUrl, thumbnailUrl };
+    preloadedArtworks[index] = artworkData;
+    displayArtwork(artworkData);
+
+    if (index + 1 < artworksMetadata.length && !preloadedArtworks[index + 1]) {
+      loadArtworkImage(index + 1);
     }
   } catch (error) {
-    // Handle errors during the image fetch operation
     console.error('Error fetching image:', error);
-    return null; // Return null if there's an error fetching the image
   }
 }
 
-// Function to display an artwork
+// Function to display an artwork with lazy loading
 function displayArtwork(artworkData) {
   const container = document.getElementById('artwork-container');
-  container.innerHTML = ''; // Clear the container before displaying new artwork
+  container.innerHTML = '';
 
-  if (container) {
-    // Create the image element and set its attributes
-    const img = document.createElement('img');
-    img.src = artworkData.imageUrl;
-    img.alt = artworkData.altText;
-    img.style.width = '50%';
-    img.style.height = '90%';
+  const img = document.createElement('img');
+  img.src = artworkData.thumbnailUrl || artworkData.fullImageUrl;
+  img.alt = artworkData.altText;
+  img.style.width = '50%';
+  img.style.height = '90%';
 
-    img.onerror = () => {
-      // Handle any errors with image loading (e.g., broken link)
-      console.error('Error loading image:', artworkData.imageUrl);
-    };
+  img.onerror = () => {
+    console.error('Error loading image:', artworkData.fullImageUrl);
+  };
 
-    // Create the title, artist, and description elements
-    const titleElement = document.createElement('h2');
-    titleElement.textContent = artworkData.title;
+  // Use a higher resolution image when the image enters the viewport
+  const observer = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          img.src = artworkData.fullImageUrl;
+          observer.unobserve(img);
+        }
+      });
+    },
+    { rootMargin: '50px' } 
+  );
+  observer.observe(img);
 
-    const artistElement = document.createElement('p');
-    artistElement.textContent = `Artist: ${artworkData.artist}`;
+  const titleElement = document.createElement('h2');
+  titleElement.textContent = artworkData.title;
 
-    const descriptionElement = document.createElement('p');
-    descriptionElement.textContent = artworkData.altText;
+  const artistElement = document.createElement('p');
+  artistElement.textContent = `Artist: ${artworkData.artist}`;
 
-    // Append the elements to the container
-    container.appendChild(titleElement);
-    container.appendChild(artistElement);
-    container.appendChild(descriptionElement);
-    container.appendChild(img);
+  const descriptionElement = document.createElement('p');
+  descriptionElement.textContent = artworkData.altText;
 
-    updatePaginationButtons(); // Update pagination buttons based on artwork
-  } else {
-    console.error('Container not found');
-  }
+  container.appendChild(titleElement);
+  container.appendChild(artistElement);
+  container.appendChild(descriptionElement);
+  container.appendChild(img);
+
+  updatePaginationButtons();
 }
 
 // Function to update pagination buttons
@@ -126,27 +123,32 @@ function updatePaginationButtons() {
   const prevBtn = document.getElementById('prev-btn');
   const nextBtn = document.getElementById('next-btn');
 
-  // Disable the "previous" button if at the first artwork
   prevBtn.disabled = currentIndex === 0;
-
-  // Disable the "next" button if at the last artwork
-  nextBtn.disabled = currentIndex === preloadedArtworks.length - 1;
+  nextBtn.disabled = currentIndex === artworksMetadata.length - 1;
 }
 
 // Event listeners for pagination buttons
 document.getElementById('prev-btn').addEventListener('click', () => {
   if (currentIndex > 0) {
-    currentIndex--; // Go to the previous artwork
-    displayArtwork(preloadedArtworks[currentIndex]);
+    currentIndex--;
+    displayOrLoadArtwork(currentIndex);
   }
 });
 
 document.getElementById('next-btn').addEventListener('click', () => {
-  if (currentIndex < preloadedArtworks.length - 1) {
-    currentIndex++; // Go to the next artwork
-    displayArtwork(preloadedArtworks[currentIndex]);
+  if (currentIndex < artworksMetadata.length - 1) {
+    currentIndex++;
+    displayOrLoadArtwork(currentIndex);
   }
 });
 
-// Start preloading artworks when the script runs
-preloadArtworks();
+function displayOrLoadArtwork(index) {
+  if (preloadedArtworks[index]) {
+    displayArtwork(preloadedArtworks[index]);
+  } else {
+    loadArtworkImage(index);
+  }
+}
+
+// Start preloading artwork metadata when the script runs
+preloadArtworksMetadata();
